@@ -1,0 +1,37 @@
+name: Assemble original-quality AFWAJ film
+on:
+  push:
+    branches: [main]
+    paths: ['.afwaj-upload/**']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  assemble:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reconstruct and verify film
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib
+          parts = [Path('.afwaj-upload/part-%02d.bin' % i) for i in range(3)]
+          data = b''.join(p.read_bytes() for p in parts)
+          assert len(data) == 92126378
+          assert hashlib.sha256(data).hexdigest() == '19f0e4f3674eed80bf06695ba797bda54f2636e0c02863d5f035c77229689856'
+          out = Path('assets/afwaj/afwaj-sleeping-pod.mp4')
+          out.parent.mkdir(parents=True, exist_ok=True)
+          out.write_bytes(data)
+          for part in parts:
+              part.unlink()
+          Path('.github/workflows/assemble-afwaj.yml').unlink()
+          PY
+      - name: Save verified film
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add assets/afwaj/afwaj-sleeping-pod.mp4 .afwaj-upload .github/workflows/assemble-afwaj.yml
+          git commit -m 'Assemble verified original-quality AFWAJ film'
+          git push
+
