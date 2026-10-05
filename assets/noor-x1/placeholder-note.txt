@@ -1,0 +1,1 @@
+Replacing prior SVG placeholders with user-provided raster case-study assets.
